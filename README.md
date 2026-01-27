@@ -4,3 +4,7 @@
 cmpt422 organization and architecture
 
 written in c99, uses tcc by default for compilation
+
+## DONE
+
+- [x] memory init
