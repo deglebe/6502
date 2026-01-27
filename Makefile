@@ -6,7 +6,8 @@ INCDIR	= include
 SOURCES	= $(SRCDIR)/main.c \
           $(SRCDIR)/system.c \
           $(SRCDIR)/hardware/hardware.c \
-          $(SRCDIR)/hardware/cpu.c
+          $(SRCDIR)/hardware/cpu.c \
+          $(SRCDIR)/hardware/memory.c
 
 OBJECTS	= $(SOURCES:.c=.o)
 
