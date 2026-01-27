@@ -23,7 +23,7 @@ void system_init(System *sys) {
 
 int system_start(System *sys) {
 	/* toggle cpu debug output */
-	sys->_CPU->hardware.debug = 0;
+	sys->_CPU->hardware.debug = 1;
 	hardware_log(&sys->hardware, "created");
 	cpu_log(sys->_CPU, "created");
 
