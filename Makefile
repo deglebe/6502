@@ -7,7 +7,8 @@ SOURCES	= $(SRCDIR)/main.c \
           $(SRCDIR)/system.c \
           $(SRCDIR)/hardware/hardware.c \
           $(SRCDIR)/hardware/cpu.c \
-          $(SRCDIR)/hardware/memory.c
+          $(SRCDIR)/hardware/memory.c \
+          $(SRCDIR)/hardware/clock.c
 
 OBJECTS	= $(SOURCES:.c=.o)
 
