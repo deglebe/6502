@@ -2,7 +2,7 @@
  * memory operations
  *
  * by: thomas bruce
- * date: 27/01/2026
+ * date: 30/01/2026
  */
 
 #include <stdio.h>
@@ -51,4 +51,9 @@ void memory_display(Memory *memory) {
 			hardware_log(&memory->hardware, message);
 		}
 	}
+}
+
+void memory_pulse(void *context) {
+	Memory *memory = (Memory *) context;
+	hardware_log(&memory->hardware, "received clock pulse");
 }

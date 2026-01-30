@@ -1,7 +1,7 @@
 /* include/hardware/memory.h
  *
  * by: thomas bruce
- * date: 27/01/2026
+ * date: 30/01/2026
  */
 
 #ifndef MEMORY_H
@@ -20,5 +20,6 @@ typedef struct {
 
 void memory_init(Memory *memory);
 void memory_display(Memory *memory);
+void memory_pulse(void *context);
 
 #endif // MEMORY_H
