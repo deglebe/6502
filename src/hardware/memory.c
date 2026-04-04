@@ -29,26 +29,33 @@ void memory_display(Memory *memory) {
 	for (unsigned int addr = 0x00; addr <= 0x14; addr++) {
 		if (addr < MEMORY_SIZE) {
 			unsigned char value = memory->data[addr];
-			/* format address as 5 digit hex, val as 2 digit hex
-			 * copy to separate buffers */
-			strcpy(addr_str, hexLog(addr, 5));
-			strcpy(value_str, hexLog(value, 2));
-			snprintf(message,
-				sizeof(message),
-				"Address : %s Contains value: %s",
-				addr_str,
-				value_str);
-			hardware_log(&memory->hardware, message);
+			if (hexLog(addr_str, sizeof(addr_str), addr, 5) != 0
+				|| hexLog(value_str, sizeof(value_str), value, 2) != 0) {
+				hardware_log(&memory->hardware,
+					"Address : ERR Contains value: ERR [hexValue conversion]: number undefined");
+			}
+			else {
+				snprintf(message,
+					sizeof(message),
+					"Address : %s Contains value: %s",
+					addr_str,
+					value_str);
+				hardware_log(&memory->hardware, message);
+			}
 		}
 		else {
-			/* handle oob addresses */
-			strcpy(addr_str, hexLog(addr, 5));
-			snprintf(message,
-				sizeof(message),
-				"Address : %s Contains value: ERR [hexValue "
-				"conversion]: number undefined",
-				addr_str);
-			hardware_log(&memory->hardware, message);
+			if (hexLog(addr_str, sizeof(addr_str), addr, 5) != 0) {
+				hardware_log(&memory->hardware,
+					"Address : ERR Contains value: ERR [hexValue conversion]: number undefined");
+			}
+			else {
+				snprintf(message,
+					sizeof(message),
+					"Address : %s Contains value: ERR [hexValue "
+					"conversion]: number undefined",
+					addr_str);
+				hardware_log(&memory->hardware, message);
+			}
 		}
 	}
 }

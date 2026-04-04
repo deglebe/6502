@@ -28,13 +28,14 @@ void hardware_log(Hardware *hw, const char *message) {
 	}
 }
 
-/* format number as uppercase hex with zero-padding
- * length parameter is min digits
- * caller should copy result if needed multiple times
- */
-char *hexLog(unsigned int number, int length) {
-	static char hex_buffer[32];
-	/* %0*X: 0 = zero-pad, * = width from parameter, X = uppercase hex */
-	snprintf(hex_buffer, sizeof(hex_buffer), "%0*X", length, number);
-	return hex_buffer;
+int hexLog(char *buf, size_t buflen, unsigned int number, int length) {
+	if (buf == NULL || buflen == 0) {
+		return -1;
+	}
+	/* %0*X: zero-pad to width length, uppercase hex */
+	int n = snprintf(buf, buflen, "%0*X", length, number);
+	if (n < 0 || (size_t)n >= buflen) {
+		return -1;
+	}
+	return 0;
 }

@@ -5,25 +5,57 @@
  * date: 30/01/2026
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "system.h"
 
 void system_init(System *sys) {
-	hardware_init(&sys->hardware, 0, "system");
-	/* allocate and init cpu. mem alloc happens here but init is
-	 * deferred to system_start */
-	sys->_CPU = (Cpu *) malloc(sizeof(Cpu));
-	cpu_init(sys->_CPU);
-	sys->_Memory = (Memory *) malloc(sizeof(Memory));
-	sys->_Clock = (Clock *) malloc(sizeof(Clock));
-	clock_init(sys->_Clock);
+	sys->_CPU = NULL;
+	sys->_Memory = NULL;
+	sys->_Clock = NULL;
 	sys->running = 0;
+
+	hardware_init(&sys->hardware, 0, "system");
+
+	sys->_CPU = (Cpu *) malloc(sizeof(Cpu));
+	if (sys->_CPU == NULL) {
+		fprintf(stderr, "6502: malloc failed (cpu)\n");
+		return;
+	}
+	cpu_init(sys->_CPU);
+
+	sys->_Memory = (Memory *) malloc(sizeof(Memory));
+	if (sys->_Memory == NULL) {
+		fprintf(stderr, "6502: malloc failed (memory)\n");
+		free(sys->_CPU->hardware.name);
+		free(sys->_CPU);
+		sys->_CPU = NULL;
+		return;
+	}
+
+	sys->_Clock = (Clock *) malloc(sizeof(Clock));
+	if (sys->_Clock == NULL) {
+		fprintf(stderr, "6502: malloc failed (clock)\n");
+		free(sys->_Memory->hardware.name);
+		free(sys->_Memory);
+		sys->_Memory = NULL;
+		free(sys->_CPU->hardware.name);
+		free(sys->_CPU);
+		sys->_CPU = NULL;
+		return;
+	}
+	clock_init(sys->_Clock);
 
 	system_start(sys);
 }
 
 int system_start(System *sys) {
+	if (sys->_CPU == NULL || sys->_Memory == NULL || sys->_Clock == NULL) {
+		fprintf(stderr, "6502: system_start called with incomplete allocation\n");
+		return 0;
+	}
+
 	/* toggle cpu debug output */
 	sys->_CPU->hardware.debug = 1;
 	hardware_log(&sys->hardware, "created");
@@ -56,17 +88,29 @@ int system_stop(System *sys) {
 
 void system_cleanup(System *sys) {
 	/* free all allocated resources */
-	if (sys->_CPU) {
-		free(sys->_CPU->hardware.name);
+	if (sys->_CPU != NULL) {
+		if (sys->_CPU->hardware.name != NULL) {
+			free(sys->_CPU->hardware.name);
+		}
 		free(sys->_CPU);
+		sys->_CPU = NULL;
 	}
-	if (sys->_Memory) {
-		free(sys->_Memory->hardware.name);
+	if (sys->_Memory != NULL) {
+		if (sys->_Memory->hardware.name != NULL) {
+			free(sys->_Memory->hardware.name);
+		}
 		free(sys->_Memory);
+		sys->_Memory = NULL;
 	}
-	if (sys->_Clock) {
-		free(sys->_Clock->hardware.name);
+	if (sys->_Clock != NULL) {
+		if (sys->_Clock->hardware.name != NULL) {
+			free(sys->_Clock->hardware.name);
+		}
 		free(sys->_Clock);
+		sys->_Clock = NULL;
 	}
-	free(sys->hardware.name);
+	if (sys->hardware.name != NULL) {
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
+	}
 }
