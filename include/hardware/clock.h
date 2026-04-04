@@ -18,7 +18,7 @@ typedef struct {
 	int listener_count;
 } Clock;
 
-void clock_init(Clock *clock);
+int clock_init(Clock *clock);
 void clock_register_listener(Clock *clock, ClockListener listener);
 void clock_pulse(Clock *clock);
 void clock_run(Clock *clock, int interval_ms);

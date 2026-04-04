@@ -18,7 +18,7 @@ typedef struct {
 	unsigned char data[MEMORY_SIZE];
 } Memory;
 
-void memory_init(Memory *memory);
+int memory_init(Memory *memory);
 void memory_display(Memory *memory);
 void memory_pulse(void *context);
 
