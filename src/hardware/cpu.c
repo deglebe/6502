@@ -8,9 +8,12 @@
 #include <stdio.h>
 #include "hardware/cpu.h"
 
-void cpu_init(Cpu *cpu) {
-	hardware_init(&cpu->hardware, 0, "cpu");
+int cpu_init(Cpu *cpu) {
+	if (hardware_init(&cpu->hardware, 0, "cpu") != 0) {
+		return -1;
+	}
 	cpu->cpuClockCount = 0;
+	return 0;
 }
 
 void cpu_log(Cpu *cpu, const char *message) {

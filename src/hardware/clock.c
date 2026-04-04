@@ -9,9 +9,12 @@
 #include <time.h>
 #include "hardware/clock.h"
 
-void clock_init(Clock *clock) {
-	hardware_init(&clock->hardware, 0, "clock");
+int clock_init(Clock *clock) {
+	if (hardware_init(&clock->hardware, 0, "clock") != 0) {
+		return -1;
+	}
 	clock->listener_count = 0;
+	return 0;
 }
 
 void clock_register_listener(Clock *clock, ClockListener listener) {

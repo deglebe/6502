@@ -16,14 +16,26 @@ void system_init(System *sys) {
 	sys->_Clock = NULL;
 	sys->running = 0;
 
-	hardware_init(&sys->hardware, 0, "system");
+	if (hardware_init(&sys->hardware, 0, "system") != 0) {
+		fprintf(stderr, "6502: hardware_init failed (system)\n");
+		return;
+	}
 
 	sys->_CPU = (Cpu *) malloc(sizeof(Cpu));
 	if (sys->_CPU == NULL) {
 		fprintf(stderr, "6502: malloc failed (cpu)\n");
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
 		return;
 	}
-	cpu_init(sys->_CPU);
+	if (cpu_init(sys->_CPU) != 0) {
+		fprintf(stderr, "6502: hardware_init failed (cpu)\n");
+		free(sys->_CPU);
+		sys->_CPU = NULL;
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
+		return;
+	}
 
 	sys->_Memory = (Memory *) malloc(sizeof(Memory));
 	if (sys->_Memory == NULL) {
@@ -31,6 +43,8 @@ void system_init(System *sys) {
 		free(sys->_CPU->hardware.name);
 		free(sys->_CPU);
 		sys->_CPU = NULL;
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
 		return;
 	}
 
@@ -43,9 +57,24 @@ void system_init(System *sys) {
 		free(sys->_CPU->hardware.name);
 		free(sys->_CPU);
 		sys->_CPU = NULL;
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
 		return;
 	}
-	clock_init(sys->_Clock);
+	if (clock_init(sys->_Clock) != 0) {
+		fprintf(stderr, "6502: hardware_init failed (clock)\n");
+		free(sys->_Clock);
+		sys->_Clock = NULL;
+		free(sys->_Memory->hardware.name);
+		free(sys->_Memory);
+		sys->_Memory = NULL;
+		free(sys->_CPU->hardware.name);
+		free(sys->_CPU);
+		sys->_CPU = NULL;
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
+		return;
+	}
 
 	system_start(sys);
 }
@@ -63,10 +92,11 @@ int system_start(System *sys) {
 
 	/* init mem and display contents. ought to show properly zeroed memory
 	 * if not, ¯\_(ツ)_/¯ */
-	if (sys->_Memory) {
-		memory_init(sys->_Memory);
-		memory_display(sys->_Memory);
+	if (memory_init(sys->_Memory) != 0) {
+		fprintf(stderr, "6502: hardware_init failed (memory)\n");
+		return 0;
 	}
+	memory_display(sys->_Memory);
 
 	/* register cpu and mem as clock listeners */
 	if (sys->_Clock && sys->_CPU && sys->_Memory) {

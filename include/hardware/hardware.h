@@ -16,7 +16,8 @@ typedef struct {
 	int debug;
 } Hardware;
 
-void hardware_init(Hardware *hw, int id, const char *name);
+/* returns 0 on success, -1 if hw/name is null or name allocation fails */
+int hardware_init(Hardware *hw, int id, const char *name);
 void hardware_log(Hardware *hw, const char *message);
 /* writes zero-padded uppercase hex into buf, null-terminated
  * should be safe for concurrent use now when each caller uses its own buf

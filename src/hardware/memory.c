@@ -10,14 +10,16 @@
 #include <string.h>
 #include "hardware/memory.h"
 
-void memory_init(Memory *memory) {
-	/* register this memory instance with the hardware logging system */
-	hardware_init(&memory->hardware, 0, "RAM");
+int memory_init(Memory *memory) {
+	if (hardware_init(&memory->hardware, 0, "RAM") != 0) {
+		return -1;
+	}
 
 	/* zero out all memory locations on startup */
 	for (unsigned int i = 0x0000; i < 0x10000; i++) {
 		memory->data[i] = 0x00;
 	}
+	return 0;
 }
 
 void memory_display(Memory *memory) {

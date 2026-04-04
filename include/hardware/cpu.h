@@ -14,7 +14,7 @@ typedef struct {
 	int cpuClockCount;
 } Cpu;
 
-void cpu_init(Cpu *cpu);
+int cpu_init(Cpu *cpu);
 void cpu_log(Cpu *cpu, const char *message);
 void cpu_pulse(void *context);
 
