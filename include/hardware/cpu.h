@@ -9,7 +9,7 @@
 
 #include "hardware/hardware.h"
 
-typedef struct {
+typedef struct Cpu {
 	Hardware hardware;
 	int cpuClockCount;
 } Cpu;

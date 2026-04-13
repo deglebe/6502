@@ -67,7 +67,7 @@ void system_init(System *sys) {
 		fprintf(stderr, "6502: malloc failed (clock)\n");
 		free(sys->_Mmu);
 		sys->_Mmu = NULL;
-		/* memory_init not run yet, as only the struct was allocated */
+		/* memory_init not run yet, only the struct was allocated */
 		free(sys->_Memory);
 		sys->_Memory = NULL;
 		free(sys->_CPU->hardware.name);
@@ -117,20 +117,26 @@ int system_start(System *sys) {
 		fprintf(stderr, "6502: hardware_init failed (memory)\n");
 		return 0;
 	}
-	if (mmu_init(sys->_Mmu, sys->_Memory) != 0) {
+	if (mmu_init(sys->_Mmu, sys->_CPU, sys->_Memory) != 0) {
 		fprintf(stderr, "6502: mmu_init failed\n");
 		return 0;
 	}
 
 	memory_display(sys->_Memory);
 
-	/* exercise mmu -> physical mar/mdr path; then dump to verify */
+	/* exercise mmu logical mar + read/write + le load + low/high byte masks */
 	mmu_set_mar(sys->_Mmu, 0x0200);
-	memory_set_mdr(sys->_Memory, 0xA9);
-	mmu_bus_write(sys->_Mmu);
+	mmu_write(sys->_Mmu, 0xA9);
 	mmu_set_mar(sys->_Mmu, 0x0201);
-	memory_set_mdr(sys->_Memory, 0xEA);
-	mmu_bus_write(sys->_Mmu);
+	mmu_write(sys->_Mmu, 0xEA);
+	/* store le pointer 0x34, 0x12 at 0x0010 -> mar should become 0x1234 */
+	mmu_set_mar(sys->_Mmu, 0x0010);
+	mmu_write(sys->_Mmu, 0x34);
+	mmu_set_mar(sys->_Mmu, 0x0011);
+	mmu_write(sys->_Mmu, 0x12);
+	mmu_mar_load_from_le(sys->_Mmu, 0x0010);
+	mmu_set_mar_low_byte(sys->_Mmu, 0x15);
+	mmu_set_mar_high_byte(sys->_Mmu, 0xAB);
 	memory_dump(sys->_Memory, 0x0000, 0x20);
 	memory_dump(sys->_Memory, 0x0200, 0x10);
 
