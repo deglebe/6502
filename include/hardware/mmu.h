@@ -25,6 +25,7 @@ typedef struct {
 
 int mmu_init(Mmu *mmu, Cpu *cpu, Memory *ram);
 int mmu_initialize_memory(Mmu *mmu);
+int mmu_load_startup_program(Mmu *mmu);
 void mmu_memory_display(Mmu *mmu);
 void mmu_memory_dump(Mmu *mmu, uint16_t start, uint16_t length);
 

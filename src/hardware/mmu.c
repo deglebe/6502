@@ -27,6 +27,24 @@ int mmu_initialize_memory(Mmu *mmu) {
 	return memory_init(mmu->ram);
 }
 
+int mmu_load_startup_program(Mmu *mmu) {
+	/* static program:
+	 * 0000:A9 0001:0D 0002:A9 0003:1D 0004:A9 0005:2D 0006:A9 0007:3F 0008:A9 0009:FF 000A:00
+	 */
+	static const uint8_t program[] = {
+		0xA9, 0x0D, 0xA9, 0x1D, 0xA9, 0x2D, 0xA9, 0x3F, 0xA9, 0xFF, 0x00
+	};
+
+	if (mmu == NULL || mmu->ram == NULL) {
+		return -1;
+	}
+
+	for (uint16_t i = 0x0000; i < (uint16_t)(sizeof(program)); i++) {
+		mmu_write_immediate(mmu, i, program[i]);
+	}
+	return 0;
+}
+
 void mmu_memory_display(Mmu *mmu) {
 	if (mmu == NULL || mmu->ram == NULL) {
 		return;

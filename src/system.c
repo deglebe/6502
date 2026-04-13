@@ -123,17 +123,11 @@ int system_start(System *sys) {
 
 	mmu_memory_display(sys->_Mmu);
 
-	/* exercise mmu logical mar + read/write + le load + low/high byte masks */
-	mmu_write_immediate(sys->_Mmu, 0x0200, 0xA9);
-	mmu_write_immediate(sys->_Mmu, 0x0201, 0xEA);
-	/* store le pointer 0x34, 0x12 at 0x0010 -> mar should become 0x1234 */
-	mmu_write_immediate(sys->_Mmu, 0x0010, 0x34);
-	mmu_write_immediate(sys->_Mmu, 0x0011, 0x12);
-	mmu_mar_load_from_le(sys->_Mmu, 0x0010);
-	mmu_set_mar_low_byte(sys->_Mmu, 0x15);
-	mmu_set_mar_high_byte(sys->_Mmu, 0xAB);
-	mmu_memory_dump(sys->_Mmu, 0x0000, 0x20);
-	mmu_memory_dump(sys->_Mmu, 0x0200, 0x10);
+	if (mmu_load_startup_program(sys->_Mmu) != 0) {
+		fprintf(stderr, "6502: failed to load startup program\n");
+		return 0;
+	}
+	mmu_memory_dump(sys->_Mmu, 0x0000, 0x10);
 
 	/* register cpu and mem as clock listeners */
 	if (sys->_Clock && sys->_CPU && sys->_Memory) {
