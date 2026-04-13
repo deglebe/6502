@@ -38,6 +38,7 @@ void mmu_set_mar_low_byte(Mmu *mmu, uint8_t lob) {
 	if (mmu == NULL) {
 		return;
 	}
+	/* keep high byte (FF00), replace low byte with lob */
 	mmu->mar = (mmu->mar & 0xFF00u) | (uint16_t)(lob & 0xFFu);
 }
 
@@ -45,6 +46,7 @@ void mmu_set_mar_high_byte(Mmu *mmu, uint8_t hob) {
 	if (mmu == NULL) {
 		return;
 	}
+	/* keep low byte (00FF), shift hob into high byte position */
 	mmu->mar = (mmu->mar & 0x00FFu) | ((uint16_t)(hob & 0xFFu) << 8);
 }
 
