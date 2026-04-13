@@ -27,6 +27,7 @@ typedef struct {
 } Memory;
 
 int memory_init(Memory *memory);
+void memory_reset(Memory *memory);
 void memory_set_mar(Memory *memory, uint16_t addr);
 void memory_set_mdr(Memory *memory, uint8_t value);
 uint16_t memory_get_mar(const Memory *memory);

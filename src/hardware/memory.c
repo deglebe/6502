@@ -14,15 +14,22 @@ int memory_init(Memory *memory) {
 	if (hardware_init(&memory->hardware, 0, "RAM") != 0) {
 		return -1;
 	}
+	char message[128];
+	snprintf(message, sizeof(message), "Created - Addressable space : %u", MEMORY_SIZE);
+	hardware_log(&memory->hardware, message);
 
+	memory_reset(memory);
+	return 0;
+}
+
+void memory_reset(Memory *memory) {
 	memory->mar = 0x0000;
 	memory->mdr = 0x00;
 
-	/* zero out all memory locations on startup */
+	/* zero out all memory locations */
 	for (unsigned int i = 0x0000; i < 0x10000; i++) {
 		memory->data[i] = 0x00;
 	}
-	return 0;
 }
 
 void memory_set_mar(Memory *memory, uint16_t addr) {
