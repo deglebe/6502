@@ -150,7 +150,10 @@ uint8_t mmu_read(Mmu *mmu) {
 	if (mmu == NULL || mmu->ram == NULL) {
 		return 0;
 	}
-	/* first call schedules read; caller should poll readiness */
+	/* first call schedules read; caller should poll readiness
+         * this is so awesome, i've done exactly this in another project, so this is basically copy paste
+         * (also did something akin to this in a job interview)
+        */
 	if (!mmu->read_pending) {
 		mmu_sync_physical_mar(mmu);
 		memory_request_read(mmu->ram);
@@ -170,6 +173,16 @@ void mmu_write(Mmu *mmu, uint8_t value) {
 	if (mmu == NULL || mmu->ram == NULL) {
 		return;
 	}
+	/* do not queue a second write until the previous queued write
+	 * has completed on a memory pulse */
+	if (mmu->write_pending && !mmu_is_write_ready(mmu)) {
+		return;
+	}
+	/* previous write is done; clear pending and accept next write */
+	if (mmu->write_pending && mmu_is_write_ready(mmu)) {
+		mmu->write_pending = 0;
+	}
+	/* write is queued and committed on next memory pulse */
 	mmu_sync_physical_mar(mmu);
 	memory_set_mdr(mmu->ram, value);
 	memory_request_write(mmu->ram);
@@ -183,11 +196,12 @@ void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value) {
 	}
 	mmu_set_mar(mmu, addr);
 	mmu_write(mmu, value);
-	/* bootstrapping helper: force one pulse so write commits on-cycle */
+	/* force one pulse so write commits on-cycle */
 	memory_pulse(mmu->ram);
 	mmu->write_pending = 0;
 }
 
+/* more (almost)copy/paste from the other project */
 int mmu_is_read_ready(const Mmu *mmu) {
 	if (mmu == NULL || mmu->ram == NULL || !mmu->read_pending) {
 		return 0;
