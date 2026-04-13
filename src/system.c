@@ -13,6 +13,7 @@
 void system_init(System *sys) {
 	sys->_CPU = NULL;
 	sys->_Memory = NULL;
+	sys->_Mmu = NULL;
 	sys->_Clock = NULL;
 	sys->running = 0;
 
@@ -48,10 +49,25 @@ void system_init(System *sys) {
 		return;
 	}
 
+	sys->_Mmu = (Mmu *) malloc(sizeof(Mmu));
+	if (sys->_Mmu == NULL) {
+		fprintf(stderr, "6502: malloc failed (mmu)\n");
+		free(sys->_Memory);
+		sys->_Memory = NULL;
+		free(sys->_CPU->hardware.name);
+		free(sys->_CPU);
+		sys->_CPU = NULL;
+		free(sys->hardware.name);
+		sys->hardware.name = NULL;
+		return;
+	}
+
 	sys->_Clock = (Clock *) malloc(sizeof(Clock));
 	if (sys->_Clock == NULL) {
 		fprintf(stderr, "6502: malloc failed (clock)\n");
-		free(sys->_Memory->hardware.name);
+		free(sys->_Mmu);
+		sys->_Mmu = NULL;
+		/* memory_init not run yet — only the struct was allocated */
 		free(sys->_Memory);
 		sys->_Memory = NULL;
 		free(sys->_CPU->hardware.name);
@@ -63,9 +79,13 @@ void system_init(System *sys) {
 	}
 	if (clock_init(sys->_Clock) != 0) {
 		fprintf(stderr, "6502: hardware_init failed (clock)\n");
+		if (sys->_Clock->hardware.name != NULL) {
+			free(sys->_Clock->hardware.name);
+		}
 		free(sys->_Clock);
 		sys->_Clock = NULL;
-		free(sys->_Memory->hardware.name);
+		free(sys->_Mmu);
+		sys->_Mmu = NULL;
 		free(sys->_Memory);
 		sys->_Memory = NULL;
 		free(sys->_CPU->hardware.name);
@@ -80,7 +100,8 @@ void system_init(System *sys) {
 }
 
 int system_start(System *sys) {
-	if (sys->_CPU == NULL || sys->_Memory == NULL || sys->_Clock == NULL) {
+	if (sys->_CPU == NULL || sys->_Memory == NULL || sys->_Mmu == NULL
+		|| sys->_Clock == NULL) {
 		fprintf(stderr, "6502: system_start called with incomplete allocation\n");
 		return 0;
 	}
@@ -96,7 +117,22 @@ int system_start(System *sys) {
 		fprintf(stderr, "6502: hardware_init failed (memory)\n");
 		return 0;
 	}
+	if (mmu_init(sys->_Mmu, sys->_Memory) != 0) {
+		fprintf(stderr, "6502: mmu_init failed\n");
+		return 0;
+	}
+
 	memory_display(sys->_Memory);
+
+	/* exercise mmu -> physical mar/mdr path; then dump to verify */
+	mmu_set_mar(sys->_Mmu, 0x0200);
+	memory_set_mdr(sys->_Memory, 0xA9);
+	mmu_bus_write(sys->_Mmu);
+	mmu_set_mar(sys->_Mmu, 0x0201);
+	memory_set_mdr(sys->_Memory, 0xEA);
+	mmu_bus_write(sys->_Mmu);
+	memory_dump(sys->_Memory, 0x0000, 0x20);
+	memory_dump(sys->_Memory, 0x0200, 0x10);
 
 	/* register cpu and mem as clock listeners */
 	if (sys->_Clock && sys->_CPU && sys->_Memory) {
@@ -131,6 +167,13 @@ void system_cleanup(System *sys) {
 		}
 		free(sys->_Memory);
 		sys->_Memory = NULL;
+	}
+	if (sys->_Mmu != NULL) {
+		if (sys->_Mmu->hardware.name != NULL) {
+			free(sys->_Mmu->hardware.name);
+		}
+		free(sys->_Mmu);
+		sys->_Mmu = NULL;
 	}
 	if (sys->_Clock != NULL) {
 		if (sys->_Clock->hardware.name != NULL) {

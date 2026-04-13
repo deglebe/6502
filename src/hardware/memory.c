@@ -15,11 +15,38 @@ int memory_init(Memory *memory) {
 		return -1;
 	}
 
+	memory->mar = 0x0000;
+	memory->mdr = 0x00;
+
 	/* zero out all memory locations on startup */
 	for (unsigned int i = 0x0000; i < 0x10000; i++) {
 		memory->data[i] = 0x00;
 	}
 	return 0;
+}
+
+void memory_set_mar(Memory *memory, uint16_t addr) {
+	memory->mar = addr;
+}
+
+void memory_set_mdr(Memory *memory, uint8_t value) {
+	memory->mdr = value;
+}
+
+uint16_t memory_get_mar(const Memory *memory) {
+	return memory->mar;
+}
+
+uint8_t memory_get_mdr(const Memory *memory) {
+	return memory->mdr;
+}
+
+void memory_bus_read(Memory *memory) {
+	memory->mdr = memory->data[memory->mar];
+}
+
+void memory_bus_write(Memory *memory) {
+	memory->data[memory->mar] = memory->mdr;
 }
 
 void memory_display(Memory *memory) {
@@ -59,6 +86,46 @@ void memory_display(Memory *memory) {
 				hardware_log(&memory->hardware, message);
 			}
 		}
+	}
+}
+
+void memory_dump(Memory *memory, uint16_t start, uint16_t length) {
+	char line[320];
+	char byte_str[8];
+
+	if (memory == NULL || length == 0) {
+		return;
+	}
+
+	for (uint32_t off = 0; off < (uint32_t)length; off += 0x10) {
+		uint16_t row_base = (uint16_t)(start + (uint16_t)off);
+		char addr_head[8];
+		if (hexLog(addr_head, sizeof(addr_head), row_base, 4) != 0) {
+			hardware_log(&memory->hardware, "[dump] ERR: address format");
+			continue;
+		}
+		int pos = snprintf(line, sizeof(line), "[dump] 0x%s:", addr_head);
+		if (pos < 0 || (size_t)pos >= sizeof(line)) {
+			continue;
+		}
+
+		uint32_t row_len = 0x10;
+		if (off + row_len > (uint32_t)length) {
+			row_len = (uint32_t)length - off;
+		}
+		for (uint32_t i = 0; i < row_len; i++) {
+			uint16_t addr = (uint16_t)(row_base + (uint16_t)i);
+			uint8_t v = memory->data[addr];
+			if (hexLog(byte_str, sizeof(byte_str), v, 2) != 0) {
+				continue;
+			}
+			int n = snprintf(line + pos, sizeof(line) - (size_t)pos, " %s", byte_str);
+			if (n < 0 || (size_t)(pos + n) >= sizeof(line)) {
+				break;
+			}
+			pos += n;
+		}
+		hardware_log(&memory->hardware, line);
 	}
 }
 

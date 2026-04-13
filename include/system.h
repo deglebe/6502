@@ -10,6 +10,7 @@
 #include "hardware/hardware.h"
 #include "hardware/cpu.h"
 #include "hardware/memory.h"
+#include "hardware/mmu.h"
 #include "hardware/clock.h"
 #include "hardware/imp/clock_listener.h"
 
@@ -20,6 +21,7 @@ typedef struct {
 	Hardware hardware;
 	Cpu *_CPU;
 	Memory *_Memory;
+	Mmu *_Mmu;
 	Clock *_Clock;
 	int running;
 } System;
