@@ -120,6 +120,14 @@ void mmu_write(Mmu *mmu, uint8_t value) {
 	memory_bus_write(mmu->ram);
 }
 
+void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value) {
+	if (mmu == NULL) {
+		return;
+	}
+	mmu_set_mar(mmu, addr);
+	mmu_write(mmu, value);
+}
+
 void mmu_bus_read(Mmu *mmu) {
 	(void)mmu_read(mmu);
 }

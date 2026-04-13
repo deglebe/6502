@@ -45,6 +45,8 @@ uint16_t mmu_translate(const Mmu *mmu, uint16_t virt_addr);
 /* one bus cycle at logical mar: translate, latch ram mar, read/write mdr */
 uint8_t mmu_read(Mmu *mmu);
 void mmu_write(Mmu *mmu, uint8_t value);
+/* convenience for static program loading: set mar to addr and write one byte */
+void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value);
 
 /* thin wrappers used by code that already set logical mar */
 void mmu_bus_read(Mmu *mmu);
