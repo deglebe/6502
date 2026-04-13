@@ -21,6 +21,11 @@ typedef struct {
 	Memory *ram;
 	/* logical memory address register (16-bit); default 0x0000 */
 	uint16_t mar;
+	/* cycle-aware wait bookkeeping for pulse-driven memory actions */
+	uint64_t read_ready_cycle;
+	uint64_t write_ready_cycle;
+	int read_pending;
+	int write_pending;
 } Mmu;
 
 int mmu_init(Mmu *mmu, Cpu *cpu, Memory *ram);
@@ -48,6 +53,10 @@ uint8_t mmu_read(Mmu *mmu);
 void mmu_write(Mmu *mmu, uint8_t value);
 /* convenience for static program loading: set mar to addr and write one byte */
 void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value);
+int mmu_is_read_ready(const Mmu *mmu);
+int mmu_is_write_ready(const Mmu *mmu);
+uint64_t mmu_get_read_ready_cycle(const Mmu *mmu);
+uint64_t mmu_get_write_ready_cycle(const Mmu *mmu);
 
 /* thin wrappers used by code that already set logical mar */
 void mmu_bus_read(Mmu *mmu);

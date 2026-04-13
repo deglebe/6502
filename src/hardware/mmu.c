@@ -19,6 +19,10 @@ int mmu_init(Mmu *mmu, Cpu *cpu, Memory *ram) {
 	mmu->cpu = cpu;
 	mmu->ram = ram;
 	mmu->mar = 0x0000;
+	mmu->read_ready_cycle = 0;
+	mmu->write_ready_cycle = 0;
+	mmu->read_pending = 0;
+	mmu->write_pending = 0;
 	return 0;
 }
 
@@ -68,8 +72,7 @@ void mmu_memory_dump(Mmu *mmu, uint16_t start, uint16_t length) {
 
 	for (uint32_t off = 0; off < (uint32_t)length; off++) {
 		uint16_t addr = (uint16_t)(start + (uint16_t)off);
-		mmu_set_mar(mmu, addr);
-		uint8_t value = mmu_read(mmu);
+		uint8_t value = memory_peek(mmu->ram, addr);
 
 		if (hexLog(addr_str, sizeof(addr_str), addr, 4) != 0
 			|| hexLog(value_str, sizeof(value_str), value, 2) != 0) {
@@ -123,13 +126,10 @@ void mmu_mar_load_from_le(Mmu *mmu, uint16_t le_addr) {
 		return;
 	}
 
-	memory_set_mar(mmu->ram, mmu_translate(mmu, le_addr));
-	memory_bus_read(mmu->ram);
-	lo = memory_get_mdr(mmu->ram);
-
-	memory_set_mar(mmu->ram, mmu_translate(mmu, (uint16_t)(le_addr + 1u)));
-	memory_bus_read(mmu->ram);
-	hi = memory_get_mdr(mmu->ram);
+	/* loading mar bytes does not trigger a memory bus read cycle; this is
+	 * just decoding two already-present bytes in little-endian order */
+	lo = memory_peek(mmu->ram, mmu_translate(mmu, le_addr));
+	hi = memory_peek(mmu->ram, mmu_translate(mmu, (uint16_t)(le_addr + 1u)));
 
 	mmu->mar = (uint16_t)lo | ((uint16_t)hi << 8);
 }
@@ -150,9 +150,20 @@ uint8_t mmu_read(Mmu *mmu) {
 	if (mmu == NULL || mmu->ram == NULL) {
 		return 0;
 	}
-	mmu_sync_physical_mar(mmu);
-	memory_bus_read(mmu->ram);
-	return memory_get_mdr(mmu->ram);
+	/* first call schedules read; caller should poll readiness */
+	if (!mmu->read_pending) {
+		mmu_sync_physical_mar(mmu);
+		memory_request_read(mmu->ram);
+		mmu->read_pending = 1;
+		mmu->read_ready_cycle = memory_get_cycle(mmu->ram) + 1;
+		return 0;
+	}
+
+	if (mmu_is_read_ready(mmu)) {
+		mmu->read_pending = 0;
+		return memory_get_mdr(mmu->ram);
+	}
+	return 0;
 }
 
 void mmu_write(Mmu *mmu, uint8_t value) {
@@ -161,7 +172,9 @@ void mmu_write(Mmu *mmu, uint8_t value) {
 	}
 	mmu_sync_physical_mar(mmu);
 	memory_set_mdr(mmu->ram, value);
-	memory_bus_write(mmu->ram);
+	memory_request_write(mmu->ram);
+	mmu->write_pending = 1;
+	mmu->write_ready_cycle = memory_get_cycle(mmu->ram) + 1;
 }
 
 void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value) {
@@ -170,6 +183,37 @@ void mmu_write_immediate(Mmu *mmu, uint16_t addr, uint8_t value) {
 	}
 	mmu_set_mar(mmu, addr);
 	mmu_write(mmu, value);
+	/* bootstrapping helper: force one pulse so write commits on-cycle */
+	memory_pulse(mmu->ram);
+	mmu->write_pending = 0;
+}
+
+int mmu_is_read_ready(const Mmu *mmu) {
+	if (mmu == NULL || mmu->ram == NULL || !mmu->read_pending) {
+		return 0;
+	}
+	return memory_get_cycle(mmu->ram) >= mmu->read_ready_cycle && !memory_is_busy(mmu->ram);
+}
+
+int mmu_is_write_ready(const Mmu *mmu) {
+	if (mmu == NULL || mmu->ram == NULL || !mmu->write_pending) {
+		return 0;
+	}
+	return memory_get_cycle(mmu->ram) >= mmu->write_ready_cycle && !memory_is_busy(mmu->ram);
+}
+
+uint64_t mmu_get_read_ready_cycle(const Mmu *mmu) {
+	if (mmu == NULL) {
+		return 0;
+	}
+	return mmu->read_ready_cycle;
+}
+
+uint64_t mmu_get_write_ready_cycle(const Mmu *mmu) {
+	if (mmu == NULL) {
+		return 0;
+	}
+	return mmu->write_ready_cycle;
 }
 
 void mmu_bus_read(Mmu *mmu) {
@@ -180,6 +224,5 @@ void mmu_bus_write(Mmu *mmu) {
 	if (mmu == NULL || mmu->ram == NULL) {
 		return;
 	}
-	mmu_sync_physical_mar(mmu);
-	memory_bus_write(mmu->ram);
+	mmu_write(mmu, memory_get_mdr(mmu->ram));
 }

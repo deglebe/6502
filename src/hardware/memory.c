@@ -25,6 +25,9 @@ int memory_init(Memory *memory) {
 void memory_reset(Memory *memory) {
 	memory->mar = 0x0000;
 	memory->mdr = 0x00;
+	memory->read_pending = 0;
+	memory->write_pending = 0;
+	memory->cycle = 0;
 
 	/* zero out all memory locations */
 	for (unsigned int i = 0x0000; i < 0x10000; i++) {
@@ -46,6 +49,28 @@ uint16_t memory_get_mar(const Memory *memory) {
 
 uint8_t memory_get_mdr(const Memory *memory) {
 	return memory->mdr;
+}
+
+uint64_t memory_get_cycle(const Memory *memory) {
+	return memory->cycle;
+}
+
+uint8_t memory_peek(const Memory *memory, uint16_t addr) {
+	return memory->data[addr];
+}
+
+void memory_request_read(Memory *memory) {
+	memory->read_pending = 1;
+	memory->write_pending = 0;
+}
+
+void memory_request_write(Memory *memory) {
+	memory->write_pending = 1;
+	memory->read_pending = 0;
+}
+
+int memory_is_busy(const Memory *memory) {
+	return memory->read_pending || memory->write_pending;
 }
 
 void memory_bus_read(Memory *memory) {
@@ -138,5 +163,15 @@ void memory_dump(Memory *memory, uint16_t start, uint16_t length) {
 
 void memory_pulse(void *context) {
 	Memory *memory = (Memory *) context;
+	memory->cycle++;
+	/* memory bus actions execute only on pulse boundaries */
+	if (memory->read_pending) {
+		memory_bus_read(memory);
+		memory->read_pending = 0;
+	}
+	else if (memory->write_pending) {
+		memory_bus_write(memory);
+		memory->write_pending = 0;
+	}
 	hardware_log(&memory->hardware, "received clock pulse");
 }

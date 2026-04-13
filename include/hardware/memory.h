@@ -22,6 +22,10 @@ typedef struct {
 	uint16_t mar;
 	/* memory data register: 8-bit (0x00 -> 0xFF) */
 	uint8_t mdr;
+	/* pending bus actions are consumed on memory_pulse only */
+	int read_pending;
+	int write_pending;
+	uint64_t cycle;
 	/* linear array of entire address space */
 	unsigned char data[MEMORY_SIZE];
 } Memory;
@@ -32,6 +36,11 @@ void memory_set_mar(Memory *memory, uint16_t addr);
 void memory_set_mdr(Memory *memory, uint8_t value);
 uint16_t memory_get_mar(const Memory *memory);
 uint8_t memory_get_mdr(const Memory *memory);
+uint64_t memory_get_cycle(const Memory *memory);
+uint8_t memory_peek(const Memory *memory, uint16_t addr);
+void memory_request_read(Memory *memory);
+void memory_request_write(Memory *memory);
+int memory_is_busy(const Memory *memory);
 /* latch mdr from data[mar] */
 void memory_bus_read(Memory *memory);
 /* store mdr into data[mar] */
