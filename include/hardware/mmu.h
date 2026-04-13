@@ -1,9 +1,7 @@
 /* include/hardware/mmu.h
- * memory management unit — translates cpu-visible addresses to physical
- * ram. identity map for now; mar/mdr traffic goes through the ram chip.
  *
  * by: thomas bruce
- * date: 04/04/2026
+ * date: 04/11/2026
  */
 
 #ifndef MMU_H

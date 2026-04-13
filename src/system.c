@@ -67,7 +67,7 @@ void system_init(System *sys) {
 		fprintf(stderr, "6502: malloc failed (clock)\n");
 		free(sys->_Mmu);
 		sys->_Mmu = NULL;
-		/* memory_init not run yet — only the struct was allocated */
+		/* memory_init not run yet, as only the struct was allocated */
 		free(sys->_Memory);
 		sys->_Memory = NULL;
 		free(sys->_CPU->hardware.name);
