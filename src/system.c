@@ -68,6 +68,7 @@ void system_init(System *sys) {
 		free(sys->_Mmu);
 		sys->_Mmu = NULL;
 		/* memory_init not run yet, only the struct was allocated */
+		/* memory_init not run yet, as only the struct was allocated */
 		free(sys->_Memory);
 		sys->_Memory = NULL;
 		free(sys->_CPU->hardware.name);
@@ -111,18 +112,17 @@ int system_start(System *sys) {
 	hardware_log(&sys->hardware, "created");
 	cpu_log(sys->_CPU, "created");
 
-	/* init mem and display contents. ought to show properly zeroed memory
-	 * if not, ¯\_(ツ)_/¯ */
-	if (memory_init(sys->_Memory) != 0) {
-		fprintf(stderr, "6502: hardware_init failed (memory)\n");
-		return 0;
-	}
 	if (mmu_init(sys->_Mmu, sys->_CPU, sys->_Memory) != 0) {
 		fprintf(stderr, "6502: mmu_init failed\n");
 		return 0;
 	}
+	/* initialize memory through mmu authority boundary */
+	if (mmu_initialize_memory(sys->_Mmu) != 0) {
+		fprintf(stderr, "6502: hardware_init failed (memory)\n");
+		return 0;
+	}
 
-	memory_display(sys->_Memory);
+	mmu_memory_display(sys->_Mmu);
 
 	/* exercise mmu logical mar + read/write + le load + low/high byte masks */
 	mmu_set_mar(sys->_Mmu, 0x0200);
@@ -137,8 +137,8 @@ int system_start(System *sys) {
 	mmu_mar_load_from_le(sys->_Mmu, 0x0010);
 	mmu_set_mar_low_byte(sys->_Mmu, 0x15);
 	mmu_set_mar_high_byte(sys->_Mmu, 0xAB);
-	memory_dump(sys->_Memory, 0x0000, 0x20);
-	memory_dump(sys->_Memory, 0x0200, 0x10);
+	mmu_memory_dump(sys->_Mmu, 0x0000, 0x20);
+	mmu_memory_dump(sys->_Mmu, 0x0200, 0x10);
 
 	/* register cpu and mem as clock listeners */
 	if (sys->_Clock && sys->_CPU && sys->_Memory) {

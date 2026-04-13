@@ -20,6 +20,27 @@ int mmu_init(Mmu *mmu, Cpu *cpu, Memory *ram) {
 	return 0;
 }
 
+int mmu_initialize_memory(Mmu *mmu) {
+	if (mmu == NULL || mmu->ram == NULL) {
+		return -1;
+	}
+	return memory_init(mmu->ram);
+}
+
+void mmu_memory_display(Mmu *mmu) {
+	if (mmu == NULL || mmu->ram == NULL) {
+		return;
+	}
+	memory_display(mmu->ram);
+}
+
+void mmu_memory_dump(Mmu *mmu, uint16_t start, uint16_t length) {
+	if (mmu == NULL || mmu->ram == NULL) {
+		return;
+	}
+	memory_dump(mmu->ram, start, length);
+}
+
 uint16_t mmu_get_mar(const Mmu *mmu) {
 	if (mmu == NULL) {
 		return 0;

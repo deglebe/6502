@@ -24,6 +24,9 @@ typedef struct {
 } Mmu;
 
 int mmu_init(Mmu *mmu, Cpu *cpu, Memory *ram);
+int mmu_initialize_memory(Mmu *mmu);
+void mmu_memory_display(Mmu *mmu);
+void mmu_memory_dump(Mmu *mmu, uint16_t start, uint16_t length);
 
 uint16_t mmu_get_mar(const Mmu *mmu);
 /* sets full logical mar (high and low bytes replaced) */
